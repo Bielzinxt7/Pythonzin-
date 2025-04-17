@@ -1,20 +1,16 @@
-#print("**********Menu**********")
-#print("Criar Usuário")
-#print("Depositar")
-#print("Sacar")
-
-#Importação de biblioteca
 from datetime import datetime
 
+# Variáveis iniciais
 saldo = 0
 limite = 500
 numero_saques = 0
-limites_saques = 3
-usuarios =[]#criei uma lista vazia , pois serão adicionados valores posteriormente
+LIMITE_SAQUES = 3
+usuarios = []
 contas = []
-agencia='0001'
+AGENCIA = '0001'
+extrato_operacoes = []
 
-#Menu com as opções que o usuário vai escolher
+# Menu com as opções
 def menu():
     print('''
         **********Menu**********
@@ -26,90 +22,120 @@ def menu():
         (e) Extrato
         (q) Sair
     ''')
-    return input('Qual opção deseja')
-#Função depósito
-def deposito(valor,saldo):
-    #  vou receber o valor do depósito e somar ao saldo
-    if valor > 0 :
+    return input('Escolha uma opção: ')
+
+# Função de depósito
+def deposito(valor, saldo):
+    if valor > 0:
         saldo += valor
-        #print mostrando o valor depositado
-        print(f'Você depositou R${valor}')      
+        extrato_operacoes.append(f"{datetime.now().strftime('%d/%m/%Y %H:%M')} - Depósito: R${valor:.2f}")
+        print(f'Você depositou R${valor:.2f}')
     else:
-        print('Valor do deposito Ínválido.Verifique a quantia digitada.')
-    
+        print('Valor do depósito inválido.')
     return saldo
-#Função saque
-def saque(saque,saldo):
 
+# Função de saque
+def saque(valor, saldo):
+    global numero_saques
 
-   global  numero_saques,limites,limites_saques
-    #De acordo com a documentação Python , váriaveis globais não ficam presas ao limite do escopo da função.
-   if numero_saques >= limites_saques:
-    print('Você atingiu o limite de saques de sua conta.Tente novamente no proximo dia útil')
-   else:
-        if saque <= 0:
-            print('Saque Inválido.Verifique o valor e tente novamente.')
-        elif saque > limite :
-            print('Valor limite excedido.Verifique o valor e tente novamente.')
-        elif saque > saldo :
-            print('Saldo insuficiênte.Verifique o valor e tente novamente.')
-        else:
-            saldo -= saque
-            numero_saques += 1
-            
-        return saldo   
-#Função extrato
-def extrato (saldo):  
-    hora = datetime.now() #Obtem a hora atual 
-    horaatual = hora.strftime('%d/%m/%Y/ %H:%M')
-    print('=============Extrato=============')
-    print(f'{horaatual} \nSaldo disponível:{saldo}' )
-    print('\n=============Extrato=============')
-#Função sair
+    if numero_saques >= LIMITE_SAQUES:
+        print('Limite diário de saques atingido.')
+    elif valor <= 0:
+        print('Valor inválido para saque.')
+    elif valor > limite:
+        print('Valor excede o limite de R$500 por saque.')
+    elif valor > saldo:
+        print('Saldo insuficiente.')
+    else:
+        saldo -= valor
+        numero_saques += 1
+        extrato_operacoes.append(f"{datetime.now().strftime('%d/%m/%Y %H:%M')} - Saque: R${valor:.2f}")
+        print(f'Saque de R${valor:.2f} realizado com sucesso.')
+
+    return saldo
+
+# Função de extrato
+def extrato(saldo):
+    print('============= Extrato =============')
+    if not extrato_operacoes:
+        print('Nenhuma operação realizada.')
+    else:
+        for operacao in extrato_operacoes:
+            print(operacao)
+    print(f'Saldo atual: R${saldo:.2f}')
+    print('===================================')
+
+# Função para sair
 def sair():
-    print('***************Encerrando o Sistema***************')
-#Função criar usuários
-def novo_usuario(usuario):
-    cpf = int(input('Digite seu cpf (Somente números);'))
-    usuario = filtrar_usuario(cpf,usuarios)
+    print('*************** Encerrando o Sistema ***************')
+
+# Função para criar novo usuário
+def novo_usuario():
+    cpf = input('Digite seu CPF (somente números): ')
+    usuario = filtrar_usuario(cpf)
 
     if usuario:
-        print('Usuário já cadastrado na base de dados!')
+        print('Usuário já cadastrado!')
         return
 
-    nome = str('Escreva seu nome completo : ')
-    data_nascimento = input('Informe a data de nascimento (dd--mm--aa) :')
-    endereço = input('Informe seu endereço (Rua , numero,cep,bairro e cidade)')
-    #o append adiciona usuário ao meu banco
-    usuarios.append(f'nome:{nome},data de nascimento:{data_nascimento},endereço:{endereço}')
-    print('Cadastro realizado com sucesso!')
-#Função filtrar usuários
-def filtrar_usuario (cpf,usuarios):
-    #Filtra o usuário com base em um CPF
-    #A Função usa uma coompreensão de lista para verificar aquele que corresponde
-    #ao cpf fornecido
-    #e retorna o primeiro usuário que corresponde com o cpf filtrado.Caso não encontre nada ele retorna NONE(nada).
-    usuarios_filtrados = [usuario for usuario in usuarios if usuarios['cpf'] ==cpf]
+    nome = input('Digite seu nome completo: ')
+    data_nascimento = input('Informe a data de nascimento (dd/mm/aaaa): ')
+    endereco = input('Informe seu endereço (Rua, número - Bairro - Cidade/Estado): ')
+
+    usuarios.append({
+        'nome': nome,
+        'data_nascimento': data_nascimento,
+        'cpf': cpf,
+        'endereco': endereco
+    })
+    print('Usuário cadastrado com sucesso!')
+
+# Função para filtrar usuário pelo CPF
+def filtrar_usuario(cpf):
+    usuarios_filtrados = [usuario for usuario in usuarios if usuario['cpf'] == cpf]
     return usuarios_filtrados[0] if usuarios_filtrados else None
 
-while True:
-    op = menu()
+# Função para criar conta
+def criar_conta():
+    cpf = input('Informe o CPF do usuário: ')
+    usuario = filtrar_usuario(cpf)
 
-    if op =='d':
-        valor = float(input('Digite o valor do Depósito: '))
-        saldo = deposito(valor,saldo)
-    if op =='s':
-        valor = float(input('Digite o valor de Saque : '))
-        saldo = saque(valor,saldo)
-
-    break
-
-# Função para listar todos os usuários cadastrados
-def listar_usuarios():
-    if not usuarios:
-        print('Não há usuários cadastrados.')
+    if usuario:
+        numero_conta = len(contas) + 1
+        contas.append({'agencia': AGENCIA, 'numero_conta': numero_conta, 'usuario': usuario})
+        print(f'Conta criada com sucesso! Agência: {AGENCIA} Conta: {numero_conta}')
     else:
-        print('Lista de Usuários:')
-        for usuario in usuarios:
-            print(f"Nome: {usuario['nome']}, CPF: {usuario['cpf']}, Data de Nascimento: {usuario['data_nascimento']}, Endereço: {usuario['endereco']}")
-            
+        print('Usuário não encontrado!')
+
+# Função para listar contas
+def listar_contas():
+    for conta in contas:
+        print(f'''
+        Agência: {conta["agencia"]}
+        Conta: {conta["numero_conta"]}
+        Titular: {conta["usuario"]["nome"]}
+        ''')
+
+# Loop principal
+while True:
+    opcao = menu()
+
+    if opcao == '1':
+        novo_usuario()
+    elif opcao == '2':
+        criar_conta()
+    elif opcao == '3':
+        listar_contas()
+    elif opcao == 'd':
+        valor = float(input('Digite o valor do depósito: '))
+        saldo = deposito(valor, saldo)
+    elif opcao == 's':
+        valor = float(input('Digite o valor do saque: '))
+        saldo = saque(valor, saldo)
+    elif opcao == 'e':
+        extrato(saldo)
+    elif opcao == 'q':
+        sair()
+        break
+    else:
+        print('Opção inválida. Tente novamente.')
